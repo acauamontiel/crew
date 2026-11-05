@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "crew",
+  "owner": {
+    "name": "Acauã Montiel"
+  },
+  "metadata": {
+    "description": "Pipeline interativo de subagents para feature, bugfix, refactor e UI em workspaces multi-repo, com gates humanos."
+  },
+  "plugins": [
+    {
+      "name": "crew",
+      "description": "Agentes planner, implementer, tester, reviewer, security-reviewer e ui-implementer; comandos /crew:feature, /crew:bugfix, /crew:refactor e /crew:ui; Playwright MCP via Docker.",
+      "version": "0.3.0",
+      "source": "./plugins/crew",
+      "category": "development"
+    }
+  ]
+}

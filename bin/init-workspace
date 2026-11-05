@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Prepara um workspace para usar o crew. Idempotente.
+#
+#   bin/init-workspace <workspace> [--worktrees <dir>]
+#
+# Workspace é a pasta onde você abre o Claude Code: um repo git sozinho, ou uma
+# pasta com vários repos (ex.: ~/code/acme). O script:
+# - mescla as permissões do crew em <workspace>/.claude/settings.json
+# - define CREW_WORKTREES (onde ficam as worktrees das tasks) e libera essa pasta
+#   para o Claude Code editar. Padrão: pasta "worktrees" ao lado do workspace.
+# - cria <workspace>/.claude/crew.md, o perfil do workspace, se ainda não existir
+#
+# Rode bin/setup antes, uma vez por máquina.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+usage() { echo "uso: $0 <workspace> [--worktrees <dir>]" >&2; exit 2; }
+
+workspace="" worktrees=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --worktrees) [ $# -ge 2 ] || usage; worktrees="$2"; shift 2 ;;
+    -h|--help)   usage ;;
+    -*)          die "opção desconhecida: $1" ;;
+    *)           [ -z "$workspace" ] || usage; workspace="$1"; shift ;;
+  esac
+done
+[ -n "$workspace" ] || usage
+
+require claude "Rode bin/setup primeiro."
+require jq     "Rode bin/setup primeiro."
+[ -d "$workspace" ] || die "diretório não encontrado: $workspace"
+workspace="$(cd "$workspace" && pwd)"
+plugin_installed "crew@$MARKETPLACE" || die "plugin crew não está instalado. Rode $CREW_DIR/bin/setup."
+
+info "Repositórios em $workspace"
+if git -C "$workspace" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  repos=("$workspace")
+else
+  repos=()
+  for d in "$workspace"/*/; do [ -e "$d.git" ] && repos+=("${d%/}"); done
+fi
+[ "${#repos[@]}" -gt 0 ] || die "$workspace não é um repo git nem contém repos git."
+for r in "${repos[@]}"; do
+  if [ -f "$r/compose.yml" ] || [ -f "$r/compose.yaml" ] || [ -f "$r/docker-compose.yml" ] || [ -f "$r/docker-compose.yaml" ]; then
+    ok "$(basename "$r")"
+  else
+    ok "$(basename "$r") (sem docker compose; descreva no perfil como rodar, se o README não bastar)"
+  fi
+done
+
+[ -n "$worktrees" ] || worktrees="$(dirname "$workspace")/worktrees"
+mkdir -p "$worktrees"
+worktrees="$(cd "$worktrees" && pwd)"
+info "Worktrees das tasks em $worktrees"
+
+info "Permissões em $workspace/.claude/settings.json"
+template="$(mktemp)"
+sed "s#__WORKTREES__#$worktrees#g" "$CREW_DIR/templates/workspace-settings.json" > "$template"
+if git -C "$workspace" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  merge_json "$workspace/.claude/settings.json" "$template" nobackup
+else
+  merge_json "$workspace/.claude/settings.json" "$template"
+fi
+rm -f "$template"
+
+profile="$workspace/.claude/crew.md"
+info "Perfil do workspace"
+if [ -e "$profile" ]; then
+  ok "$profile já existe; mantido como está"
+else
+  cp "$CREW_DIR/templates/crew.md" "$profile"
+  ok "$profile criado a partir do modelo"
+fi
+
+cat <<EOF
+
+Pronto. Próximos passos:
+  - preencha $profile com as regras deste workspace (ID de task, commits, execução,
+    revisão, segurança); seção vazia ou ausente = padrão do plugin
+  - abra o Claude Code em $workspace
+  - nos repos de front-end, rode "/impeccable teach" uma vez (de dentro do repo), para o impeccable aprender o design do projeto
+  - primeiro teste: um /crew:bugfix pequeno e conhecido, para ver os gates e os dois revisores funcionando
+EOF

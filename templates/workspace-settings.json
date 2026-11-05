@@ -1,0 +1,19 @@
+{
+  "env": {
+    "CREW_WORKTREES": "__WORKTREES__"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(git *)",
+      "Bash(gh pr *)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Read(**/.env)"
+    ],
+    "additionalDirectories": [
+      "__WORKTREES__"
+    ]
+  }
+}
