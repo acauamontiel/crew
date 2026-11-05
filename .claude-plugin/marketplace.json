@@ -11,7 +11,7 @@
     {
       "name": "crew",
       "description": "Agentes planner, implementer, tester, reviewer, security-reviewer e ui-implementer; comandos /crew:feature, /crew:bugfix, /crew:refactor e /crew:ui; Playwright MCP via Docker.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "source": "./plugins/crew",
       "category": "development"
     }

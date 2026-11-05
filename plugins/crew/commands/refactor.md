@@ -5,6 +5,8 @@ Refactor: $ARGUMENTS
 
 Antes de começar, leia o perfil do workspace (`.claude/crew.md`, se existir); as regras dele prevalecem sobre as deste comando.
 
+Registre o andamento seguindo o skill crew:state: crie o estado logo depois do planner e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs). Grave antes de PARAR para me perguntar e de novo quando eu responder.
+
 1. Use o subagent planner com TIPO = refactor. Me mostre a tabela de repos, invariantes, cobertura e sequência e PARE até eu aprovar.
 2. Prepare as worktrees dos repos afetados seguindo o skill crew:worktrees (branch de refactor).
 3. Se o plano pedir testes de caracterização, use o subagent tester para escrevê-los e rodar a suíte ANTES de qualquer mudança. Guarde o resultado como baseline, por repo.

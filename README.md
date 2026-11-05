@@ -5,8 +5,9 @@ Pipeline interativo de subagents do Claude Code para **feature**, **bugfix**, **
 Este repositório é um marketplace de plugins do Claude Code com um plugin, `crew`:
 
 - **Agentes:** `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer`, `ui-implementer`
-- **Comandos:** `/crew:feature`, `/crew:bugfix`, `/crew:refactor`, `/crew:ui`
-- **Skill interno:** `crew:worktrees` (perfil do workspace, repositórios, branch base e worktrees, usado pelos comandos)
+- **Comandos:** `/crew:feature`, `/crew:bugfix`, `/crew:refactor`, `/crew:ui`, `/crew:status`
+- **Skills internos:** `crew:worktrees` (perfil do workspace, repositórios, branch base e worktrees) e `crew:state` (estado da task em disco), usados pelos comandos
+- **Dashboard:** painel local das tasks, servido por `bin/dashboard`
 - **MCP:** Playwright via Docker, para os screenshots de UI
 
 O plugin é genérico. O que é próprio de um time ou projeto (de onde vem o ID da task, formato de commit, como rodar, riscos de segurança do domínio) fica num **perfil do workspace**, fora do plugin. Veja [Perfil do workspace](#perfil-do-workspace).
@@ -20,6 +21,8 @@ Você abre o Claude Code num **workspace**: uma pasta com vários repositórios 
 3. Um **implementer por repositório** trabalha em paralelo, cada um na sua worktree. Em repos com docker compose, comandos e testes rodam com `docker compose run --rm <serviço>` a partir da worktree; o `run` não usa `container_name` fixo nem publica portas, então não conflita com um stack já rodando.
 4. **Tester**, depois **reviewer** e **security-reviewer** em paralelo, olhando o diff de cada repo contra a sua base e a coerência entre os repos.
 5. **Um PR por repositório**, com `--base` na branch base e links entre os PRs da task. Nenhum comando faz merge.
+
+A cada etapa, a sessão grava o estado da task em `$CREW_WORKTREES/<task>/.crew/`, que alimenta o [dashboard](#dashboard).
 
 Se o planner marcar mudança de UI num repo de front-end, o `/crew:feature` pergunta, junto da aprovação do plano, se você quer 3 variantes de design para ele. Não é preciso escolher o comando certo de antemão.
 
@@ -43,7 +46,7 @@ O `bin/setup` é idempotente; rode de novo a qualquer momento. Ele:
 2. mescla `CLAUDE_CODE_FORK_SUBAGENT=0` em `~/.claude/settings.json`, com backup em `settings.json.bak` e sem apagar o que já existir;
 3. registra esta pasta como marketplace `crew` e instala o plugin `crew` no escopo usuário;
 4. instala o plugin [impeccable](https://impeccable.style) (`pbakaus/impeccable`), usado nas variantes de UI; se já estiver instalado, não faz nada;
-5. baixa a imagem do Playwright MCP.
+5. baixa as imagens do Playwright MCP e do dashboard (`nginx:alpine`).
 
 Depois, **reinicie as sessões abertas do Claude Code**.
 
@@ -120,10 +123,25 @@ Os comandos são sempre chamados com o prefixo `/crew:`:
 | `/crew:bugfix <ticket, stack trace ou link do monitor de erros>` | diagnóstico → worktrees → teste de regressão falhando → correção → suíte verde → reviews → PRs |
 | `/crew:refactor <descrição>` | invariantes → **aprovação** → worktrees → baseline → passos pequenos → suíte idêntica → reviews → PRs |
 | `/crew:ui <tela/componente>` | brief → **aprovação** → 3 variantes em paralelo → screenshots na conversa → **você escolhe** → testes → reviews → PR |
+| `/crew:status [filtro]` | lista as tasks, atualiza o estado dos PRs pelo `gh` (merge → concluída) e oferece remover as worktrees das concluídas |
 
 **Primeiro teste:** um `/crew:bugfix` pequeno e conhecido, para ver os gates e os dois revisores funcionando antes de usar em algo real.
 
-**Limpeza:** as worktrees ficam em `$CREW_WORKTREES/<task>/` até o merge, para correções pedidas no review. Depois do merge, peça ao Claude para remover as worktrees da task (procedimento do skill `crew:worktrees`).
+**Limpeza:** as worktrees ficam em `$CREW_WORKTREES/<task>/` até o merge, para correções pedidas no review. Depois do merge, rode `/crew:status`: ele marca a task como concluída e oferece remover as worktrees (a pasta `.crew/` fica, para o histórico).
+
+## Dashboard
+
+```bash
+~/code/crew/bin/dashboard ~/code/acme
+```
+
+Abre em http://localhost:7420 o painel com todas as tasks do workspace, atualizado a cada poucos segundos e legível do celular ao monitor grande. As tasks ficam em seções: **Precisa de você** no topo (paradas esperando sua resposta: aprovar o plano, escolher a variante, bloqueadores depois de 2 ciclos, possível incidente de segurança), depois **Em andamento**, e **Concluídas** e **Canceladas** recolhidas. Cada task mostra uma barra de etapas (Plano, Código, Testes, Revisão, PR, Merge), os repositórios, o último ciclo de testes e os vereditos dos dois revisores. O clique abre os detalhes: branches, PRs, todos os ciclos, o histórico e os artefatos (plano, resultados de teste e reviews de cada ciclo, descrição dos PRs).
+
+Opções: `--port N` (padrão 7420), `--worktrees <dir>` (em vez de ler `CREW_WORKTREES` do `settings.json` do workspace) e `--stop` para derrubar.
+
+O dashboard só lê. Ele roda num container `nginx:alpine` publicado só em `127.0.0.1`, com `$CREW_WORKTREES` montado como somente leitura, e serve apenas a lista de tasks e os arquivos `.json`/`.md` de `<task>/.crew/`; código das worktrees e links simbólicos (como o `.env`) não são servidos. A sessão principal é a única que grava o estado; os subagents nunca escrevem nele. O formato está no skill [`crew:state`](plugins/crew/skills/state/SKILL.md).
+
+Se a sessão de uma task fechar no meio, o estado continua no disco: rode o mesmo comando de novo com o mesmo ticket e ele oferece continuar da etapa em que parou.
 
 ## Screenshots de UI
 
@@ -140,18 +158,21 @@ As variantes são fotografadas pela sessão principal, uma por vez: ela para o s
 - **Screenshots pela sessão principal**, não por subagent: subagents devolvem só texto, e o app desktop do Claude Code mostra as imagens direto na conversa. Nada de salvar prints em disco.
 - **Fotografia de variantes é serial**, porque todas disputam a porta do serviço de front.
 - **Dois revisores em paralelo** em todo pipeline: `reviewer` (qualidade, escopo) e `security-reviewer` (segurança e dados pessoais). Bloqueador de qualquer um volta para o implementer, no máximo 2 ciclos.
+- **Estado em arquivo, fora dos repositórios**, em `$CREW_WORKTREES/<task>/.crew/`: funciona com vários repos por task e não precisa de `.gitignore`. Os prints de UI continuam fora do disco.
 - **Playwright MCP via Docker** (`--network host`, para alcançar o app em `localhost`), sem exigir Node no host.
 
 ## Estrutura
 
 ```
 .claude-plugin/marketplace.json     marketplace "crew"
-plugins/crew/                       plugin (agents/, commands/, skills/worktrees/, .mcp.json)
+plugins/crew/                       plugin (agents/, commands/, skills/worktrees/, skills/state/, .mcp.json)
+dashboard/                          index.html do dashboard e nginx.conf
 templates/crew.md                   modelo do perfil do workspace
 templates/user-settings.json        env mesclado em ~/.claude/settings.json
 templates/workspace-settings.json   env e permissões mesclados em <workspace>/.claude/settings.json
 bin/setup                           instalação na máquina
 bin/init-workspace                  preparação de um workspace
+bin/dashboard                       sobe o dashboard local
 ```
 
 Para conferir os manifestos depois de editar:

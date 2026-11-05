@@ -46,8 +46,10 @@ else
   claude plugin install impeccable@impeccable --scope user
 fi
 
-info "Baixando a imagem do Playwright MCP"
-docker pull mcr.microsoft.com/playwright/mcp >/dev/null && ok "mcr.microsoft.com/playwright/mcp"
+info "Baixando as imagens do Playwright MCP e do dashboard"
+for image in mcr.microsoft.com/playwright/mcp nginx:alpine; do
+  docker pull "$image" >/dev/null && ok "$image"
+done
 
 cat <<EOF
 

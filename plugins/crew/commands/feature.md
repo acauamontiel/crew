@@ -5,6 +5,8 @@ Ticket: $ARGUMENTS
 
 Antes de começar, leia o perfil do workspace (`.claude/crew.md`, se existir); as regras dele prevalecem sobre as deste comando.
 
+Registre o andamento seguindo o skill crew:state: crie o estado logo depois do planner e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs). Grave antes de PARAR para me perguntar e de novo quando eu responder.
+
 1. Use o subagent planner com TIPO = feature. Me mostre o plano, com a tabela de repositórios afetados, e PARE: aguarde minha aprovação antes de continuar.
    Se algum repo de front-end tiver UI = sim, pergunte junto da aprovação se quero 3 variantes de design para ele. Se sim, peça ao planner o brief visual (3 direções nomeadas e rotas a fotografar) e, para esse repo, siga os passos 2 a 5 de /crew:ui no lugar do passo 3 abaixo.
 2. Prepare as worktrees de todos os repos afetados seguindo o skill crew:worktrees e me mostre a tabela.

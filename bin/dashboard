@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Sobe o dashboard do crew num container nginx, só leitura, em 127.0.0.1.
+#
+#   bin/dashboard [workspace] [--port N] [--worktrees DIR]
+#   bin/dashboard --stop
+#
+# Lê CREW_WORKTREES de <workspace>/.claude/settings.json (padrão: diretório atual).
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+CONTAINER="crew-dashboard"
+IMAGE="nginx:alpine"
+port=7420
+workspace="."
+worktrees=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --stop)
+      docker rm -f "$CONTAINER" >/dev/null 2>&1 && ok "dashboard parado" || ok "dashboard não estava rodando"
+      exit 0 ;;
+    --port) port="${2:?--port precisa de um número}"; shift 2 ;;
+    --worktrees) worktrees="${2:?--worktrees precisa de um diretório}"; shift 2 ;;
+    -h|--help) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) die "opção desconhecida: $1" ;;
+    *) workspace="$1"; shift ;;
+  esac
+done
+
+require docker "Instale o Docker."
+[[ "$port" =~ ^[0-9]+$ ]] || die "porta inválida: $port"
+
+if [ -z "$worktrees" ]; then
+  [ -d "$workspace" ] || die "workspace não encontrado: $workspace"
+  settings="$workspace/.claude/settings.json"
+  [ -f "$settings" ] || die "$settings não existe. Rode bin/init-workspace neste workspace ou passe --worktrees."
+  require jq "Instale o jq."
+  worktrees="$(jq -r '.env.CREW_WORKTREES // empty' "$settings")"
+  [ -n "$worktrees" ] || die "CREW_WORKTREES não está em $settings. Rode bin/init-workspace."
+fi
+mkdir -p "$worktrees"
+worktrees="$(cd "$worktrees" && pwd)"
+
+docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+docker run -d --rm --name "$CONTAINER" \
+  -p "127.0.0.1:$port:80" \
+  -v "$worktrees:/srv/tasks:ro" \
+  -v "$CREW_DIR/dashboard:/srv/app:ro" \
+  -v "$CREW_DIR/dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
+  "$IMAGE" >/dev/null
+
+ok "dashboard em http://localhost:$port (tasks de $worktrees)"
+info "para parar: $0 --stop"

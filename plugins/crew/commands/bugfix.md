@@ -5,6 +5,8 @@ Bug (ticket, stack trace ou link do monitor de erros): $ARGUMENTS
 
 Antes de começar, leia o perfil do workspace (`.claude/crew.md`, se existir); as regras dele prevalecem sobre as deste comando.
 
+Registre o andamento seguindo o skill crew:state: crie o estado logo depois do planner e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs). Grave antes de PARAR para me perguntar e de novo quando eu responder.
+
 1. Use o subagent planner com TIPO = bug.
    Se a confiança for alta e a correção tiver menos de ~30 linhas, siga sem me perguntar.
    Caso contrário, me mostre o diagnóstico e PARE até eu confirmar.

@@ -5,6 +5,8 @@ Tela/componente: $ARGUMENTS
 
 Antes de começar, leia o perfil do workspace (`.claude/crew.md`, se existir); as regras dele prevalecem sobre as deste comando.
 
+Registre o andamento seguindo o skill crew:state: crie o estado logo depois do planner e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs). Grave antes de PARAR para me perguntar e de novo quando eu responder.
+
 1. Use o subagent planner com TIPO = feature, pedindo além do plano um brief visual com 3 direções de design distintas e nomeadas, e as rotas a fotografar. Ele identifica o repo de front-end (e os de back-end, se a tela precisar de mudança na API). Me mostre e PARE até eu aprovar.
 2. Prepare, seguindo o skill crew:worktrees, uma worktree por direção no repo de front-end (branch e pasta de variante de UI). Rode 3 subagents ui-implementer em paralelo, um por direção, todos com o mesmo brief.
    Se a tela precisar de mudança em repos de back-end, prepare a worktree deles e rode o implementer em paralelo.
