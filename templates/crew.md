@@ -24,6 +24,16 @@ curta no imperativo.
 Exemplo: "Commits em Conventional Commits; o ID vai no fim da primeira linha como #ABC-123."
 -->
 
+## Pull requests
+
+<!--
+Onde e como abrir os PRs.
+Padrão do plugin: detecta a forja pelo remote `origin` e usa a CLI dela se estiver instalada e
+autenticada (gh no GitHub, glab no GitLab, tea no Forgejo/Gitea); sem CLI, publica a branch e
+entrega o link para você abrir o PR. Nunca faz merge.
+Exemplo: "Forgejo self-hosted em git.exemplo.com, com `tea` (login `exemplo`). PRs sempre como rascunho."
+-->
+
 ## Execução
 
 <!--

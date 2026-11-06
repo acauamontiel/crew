@@ -20,4 +20,4 @@ Registre o andamento seguindo o skill crew:state: crie o estado logo depois do p
 4. Me apresente as variantes lado a lado: nome da direção, os prints, e uma crítica curta de cada usando /impeccable critique. Pergunte qual escolher, oferecendo também "misturar X com Y".
 5. Com a escolhida: crie a worktree de trabalho do repo de front-end (branch de feature) e use o implementer para trazer a branch vencedora para ela. Remova as worktrees e branches das variantes seguindo o skill crew:worktrees.
 6. Use o subagent tester. Depois rode em paralelo reviewer e security-reviewer, com as mesmas regras do /crew:feature.
-7. Abra um PR por repo com `gh pr create --base <base>`, incluindo os prints da variante escolhida. Não faça merge.
+7. Abra um PR por repo seguindo a seção "Pull requests" do skill crew:worktrees, incluindo os prints da variante escolhida. Não faça merge.

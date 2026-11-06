@@ -20,7 +20,7 @@ Você abre o Claude Code num **workspace**: uma pasta com vários repositórios 
 2. Depois da sua aprovação, a sessão cria **uma worktree por repositório afetado** em `$CREW_WORKTREES/<task>/<repo>`, a partir de `origin/develop` (ou da branch padrão, quando o repo não tem `develop`), com link para o `.env` do repo original. O código original e o que estiver rodando no workspace não são tocados.
 3. Um **implementer por repositório** trabalha em paralelo, cada um na sua worktree. Em repos com docker compose, comandos e testes rodam com `docker compose run --rm <serviço>` a partir da worktree; o `run` não usa `container_name` fixo nem publica portas, então não conflita com um stack já rodando.
 4. **Tester**, depois **reviewer** e **security-reviewer** em paralelo, olhando o diff de cada repo contra a sua base e a coerência entre os repos.
-5. **Um PR por repositório**, com `--base` na branch base e links entre os PRs da task. Nenhum comando faz merge.
+5. **Um PR por repositório**, na branch base e com links entre os PRs da task. A forja é detectada pelo remote: com a CLI dela instalada (`gh`, `glab` ou `tea`), o PR é aberto direto; sem CLI, a branch é publicada e você recebe o link para abrir o PR. Nenhum comando faz merge.
 
 A cada etapa, a sessão grava o estado da task em `$CREW_WORKTREES/<task>/.crew/`, que alimenta o [dashboard](#dashboard).
 
@@ -30,7 +30,7 @@ Se o planner marcar mudança de UI num repo de front-end, o `/crew:feature` perg
 
 - Claude Code
 - Docker com o plugin `compose` (o Playwright MCP roda em container; os seus projetos podem ou não usar compose)
-- GitHub CLI (`gh`) autenticado: `gh auth login`
+- Opcional: a CLI da sua forja, autenticada, para o crew abrir os PRs sozinho: [`gh`](https://cli.github.com) (GitHub), [`glab`](https://gitlab.com/gitlab-org/cli) (GitLab) ou [`tea`](https://gitea.com/gitea/tea) (Forgejo e Gitea). Sem ela, o crew publica a branch e te dá o link do PR.
 - `git` e `jq`
 
 ## Instalação na máquina (uma vez)
@@ -61,7 +61,7 @@ Ele lista os repositórios encontrados e:
 - mescla em `<workspace>/.claude/settings.json`:
   - `CREW_WORKTREES`: onde ficam as worktrees das tasks. O padrão é a pasta `worktrees` ao lado do workspace (para `~/code/acme`, `~/code/worktrees`); troque com `--worktrees <dir>`;
   - `additionalDirectories` com essa pasta, para o Claude Code poder editar as worktrees;
-  - permissões: libera `docker compose`, `git` e `gh pr`; nega `git push --force` e a leitura de qualquer `.env`;
+  - permissões: libera `docker compose`, `git` e os comandos de PR de `gh`, `glab` e `tea`; nega `git push --force` e a leitura de qualquer `.env`;
 - cria `<workspace>/.claude/crew.md`, o perfil do workspace, a partir do modelo, se ainda não existir.
 
 Nos repositórios com front-end, rode uma vez dentro do Claude Code, a partir do repo, para o impeccable aprender o design do projeto antes das primeiras variantes:
@@ -78,6 +78,7 @@ O perfil é um Markdown em `<workspace>/.claude/crew.md`. Todo agente e comando 
 | --- | --- | --- |
 | **Tarefas** | todos | usa o ID que aparecer no ticket; sem ID, segue sem nenhum (nunca inventa) |
 | **Branches e commits** | worktrees, implementer, tester, ui-implementer | branch `<feature\|fix\|refactor>/<id>-<slug>`; base `develop`, senão a padrão do repo; commits pequenos, mensagem curta no imperativo |
+| **Pull requests** | worktrees, /crew:status | detecta a forja pelo `origin` e usa `gh`, `glab` ou `tea` se instalado e autenticado; senão publica a branch e entrega o link do PR |
 | **Execução** | worktrees, implementer, tester, ui-implementer, /crew:ui | docker compose do repo quando existir (`docker compose run --rm`); senão, o README do repo |
 | **Revisão** | reviewer | bugs de correção, sobras de debug, duplicação, escopo; achados como bloqueador, sugestão ou nota |
 | **Segurança e privacidade** | security-reviewer | checklist genérico (autorização e IDOR, injeção, exposição de API, segredos, sessão, uploads e SSRF, dependências, cache, dados pessoais) |
@@ -123,7 +124,7 @@ Os comandos são sempre chamados com o prefixo `/crew:`:
 | `/crew:bugfix <ticket, stack trace ou link do monitor de erros>` | diagnóstico → worktrees → teste de regressão falhando → correção → suíte verde → reviews → PRs |
 | `/crew:refactor <descrição>` | invariantes → **aprovação** → worktrees → baseline → passos pequenos → suíte idêntica → reviews → PRs |
 | `/crew:ui <tela/componente>` | brief → **aprovação** → 3 variantes em paralelo → screenshots na conversa → **você escolhe** → testes → reviews → PR |
-| `/crew:status [filtro]` | lista as tasks, atualiza o estado dos PRs pelo `gh` (merge → concluída) e oferece remover as worktrees das concluídas |
+| `/crew:status [filtro]` | lista as tasks, atualiza o estado dos PRs pela CLI da forja ou pelo git (merge → concluída) e oferece remover as worktrees das concluídas |
 
 **Primeiro teste:** um `/crew:bugfix` pequeno e conhecido, para ver os gates e os dois revisores funcionando antes de usar em algo real.
 

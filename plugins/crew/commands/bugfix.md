@@ -19,4 +19,4 @@ Registre o andamento seguindo o skill crew:state: crie o estado logo depois do p
    - subagent security-reviewer, incluindo a pergunta extra de bugfix
    Se qualquer um apontar bloqueador, retome o implementer. Máximo 2 ciclos; depois PARE e me mostre o que restou.
    Se o security-reviewer indicar possível incidente de segurança ou vazamento de dado pessoal, PARE e me avise antes de abrir o PR.
-7. Abra um PR por repo com `gh pr create --base <base>` a partir da worktree, incluindo causa raiz, o teste de regressão, links para os PRs dos outros repos e "Riscos aceitos" se houver. Não faça merge.
+7. Abra um PR por repo seguindo a seção "Pull requests" do skill crew:worktrees, incluindo causa raiz, o teste de regressão, links para os PRs dos outros repos e "Riscos aceitos" se houver. Não faça merge.

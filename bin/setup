@@ -3,7 +3,7 @@
 #
 #   bin/setup
 #
-# - confere dependências (claude, docker compose, gh autenticado, git, jq)
+# - confere dependências (claude, docker compose, git, jq) e as CLIs de forja opcionais (gh, glab, tea)
 # - grava CLAUDE_CODE_FORK_SUBAGENT=0 em ~/.claude/settings.json
 # - registra este repositório como marketplace "crew" e instala o plugin crew
 # - instala o plugin impeccable (usado pelo /crew:ui e pelas variantes do /crew:feature)
@@ -17,9 +17,16 @@ require git    "Instale o git."
 require jq     "Instale com: sudo apt install jq"
 require docker "Instale o Docker Engine com o plugin compose."
 docker compose version >/dev/null 2>&1 || die "'docker compose' não funciona. Instale o plugin compose do Docker."
-require gh     "Instale o GitHub CLI: https://cli.github.com"
-gh auth status >/dev/null 2>&1 || die "gh não está autenticado. Rode: gh auth login"
 ok "dependências presentes"
+
+# CLIs de forja são opcionais: sem elas, o crew publica a branch e entrega o link do PR.
+forges=()
+for cli in gh glab tea; do command -v "$cli" >/dev/null 2>&1 && forges+=("$cli"); done
+if [ ${#forges[@]} -eq 0 ]; then
+  warn "nenhuma CLI de forja (gh, glab, tea): o crew vai publicar as branches e te entregar o link para abrir cada PR"
+else
+  ok "CLIs de forja: ${forges[*]} (cada uma precisa estar autenticada na sua forja)"
+fi
 
 info "Configurando ~/.claude/settings.json"
 merge_json "$HOME/.claude/settings.json" "$CREW_DIR/templates/user-settings.json"

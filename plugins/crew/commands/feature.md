@@ -15,4 +15,4 @@ Registre o andamento seguindo o skill crew:state: crie o estado logo depois do p
 5. Rode em paralelo o subagent reviewer e o subagent security-reviewer, ambos com a tabela.
    Se qualquer um apontar bloqueador, retome o implementer do repo com os bloqueadores dos dois. Máximo 2 ciclos; depois disso PARE e me mostre o que restou.
    Achados alta/média de segurança não corrigidos entram numa seção "Riscos aceitos" na descrição do PR.
-6. Abra um PR por repo com `gh pr create --base <base>` a partir da worktree: plano na descrição, links para os PRs dos outros repos da task, e os reviews daquele repo como comentários. Não faça merge.
+6. Abra um PR por repo seguindo a seção "Pull requests" do skill crew:worktrees: plano na descrição, links para os PRs dos outros repos da task, e os reviews daquele repo como comentários. Não faça merge.

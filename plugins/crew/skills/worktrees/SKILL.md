@@ -43,6 +43,30 @@ Devolva uma tabela: repo | tipo | worktree | branch | base | execução. Passe e
 
 Sempre a partir da worktree. Se o repo tiver docker compose: `docker compose run --rm <serviço> <comando>`. O `run` não usa `container_name` fixo nem publica portas, então não conflita com um stack que já esteja rodando. Senão, siga o perfil ou o README do repo.
 
+## Pull requests
+
+O crew não depende de uma forja específica. Para cada repo da task:
+
+1. **Ferramenta.** A do perfil (seção "Pull requests"), se ele definir. Senão, olhe o host de `git -C <repo> remote get-url origin`:
+   - GitHub (github.com ou GitHub Enterprise): `gh`, se estiver instalado e autenticado (`gh auth status`);
+   - GitLab: `glab`, se estiver instalado e autenticado;
+   - Forgejo ou Gitea: `tea`, se estiver instalado e com login para esse host (`tea login list`);
+   - nenhuma dessas: **modo manual**.
+2. **Publicar a branch:** `git -C <worktree> push -u origin <branch>`. Nunca com `--force`.
+3. **Abrir o PR** a partir da worktree, com base `<base>` e, como descrição, o arquivo `.crew/pr/<repo>.md` do estado (skill crew:state):
+   - gh: `gh pr create --base <base> --head <branch> --title "<título>" --body-file <arquivo>`
+   - glab: `glab mr create --target-branch <base> --source-branch <branch> --title "<título>" --description "<texto>"`
+   - tea: `tea pulls create --base <base> --head <branch> --title "<título>" --description "<texto>"`
+   Se não tiver certeza da sintaxe da versão instalada, consulte o `--help` antes. Os reviews entram como comentários do PR quando a ferramenta permitir; senão, no fim da descrição.
+4. **Modo manual:** não tente criar o PR por API nem por navegador. Me entregue, por repo, o link de abertura e a descrição pronta para colar:
+   - GitHub: `https://<host>/<dono>/<repo>/compare/<base>...<branch>?expand=1`
+   - GitLab: `https://<host>/<dono>/<repo>/-/merge_requests/new?merge_request[source_branch]=<branch>&merge_request[target_branch]=<base>`
+   - Forgejo ou Gitea: `https://<host>/<dono>/<repo>/compare/<base>...<branch>`
+   Converta remotes SSH (`git@host:dono/repo.git`) para o host e o caminho acima. No estado, deixe a task em `pr` com `waiting` "abrir os PRs pelos links", e registre cada PR só quando eu disser o número ou o link.
+5. **Nunca faça merge**, em nenhuma ferramenta.
+
+**Consultar o estado de um PR** (usado pelo /crew:status): com a CLI, o comando de visualização dela (`gh pr view <url> --json state`, `glab mr view <n>`, `tea pulls <n>`; veja o `--help`). Sem CLI: `git -C <repo> fetch origin` e `git -C <repo> merge-base --is-ancestor origin/<branch> origin/<base>` detecta merge comum e fast-forward, mas não squash nem rebase; se não der para saber, me pergunte.
+
 ## Remover
 
 Ao descartar variantes de UI, ou quando eu pedir depois do merge: `git -C <repo> worktree remove <worktree>` e `git -C <repo> branch -D <branch>`. Nunca remova uma worktree com mudanças não commitadas sem me perguntar.

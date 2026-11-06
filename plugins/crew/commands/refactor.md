@@ -16,4 +16,4 @@ Registre o andamento seguindo o skill crew:state: crie o estado logo depois do p
    - subagent reviewer, com a pergunta "há alguma mudança de comportamento ou feature creep no diff?"
    - subagent security-reviewer
    Se qualquer um apontar bloqueador, retome o implementer. Máximo 2 ciclos; depois PARE e me mostre o que restou.
-7. Abra um PR por repo com `gh pr create --base <base>` a partir da worktree, listando os invariantes preservados, links para os PRs dos outros repos e "Riscos aceitos" se houver. Não faça merge.
+7. Abra um PR por repo seguindo a seção "Pull requests" do skill crew:worktrees, listando os invariantes preservados, links para os PRs dos outros repos e "Riscos aceitos" se houver. Não faça merge.

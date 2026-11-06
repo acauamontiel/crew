@@ -1,6 +1,6 @@
 {
   "name": "crew",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Pipeline interativo de subagents em workspaces multi-repo: planner, implementer, tester, reviewer, security-reviewer e ui-implementer, com os comandos /crew:feature, /crew:bugfix, /crew:refactor, /crew:ui e /crew:status. Grava o estado de cada task para o dashboard local. Detecta os repositórios afetados e quais são front-end; regras de time e domínio vêm do perfil do workspace (.claude/crew.md).",
   "author": {
     "name": "Acauã Montiel"

@@ -6,7 +6,10 @@
     "allow": [
       "Bash(docker compose *)",
       "Bash(git *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(glab mr *)",
+      "Bash(tea pulls *)",
+      "Bash(tea comment *)"
     ],
     "deny": [
       "Bash(git push --force *)",
