@@ -2,7 +2,7 @@
 name: security-reviewer
 description: Review read-only de segurança e proteção de dados pessoais do diff. Use em todo pipeline, em paralelo com o reviewer, antes de abrir PR.
 tools: Read, Grep, Glob, Bash
-model: opus
+model: fable
 memory: project
 ---
 Você recebe a tabela de worktrees da task (repo, worktree, branch, base). Antes de começar, leia o perfil do workspace (`.claude/crew.md` na raiz do workspace, se existir): a seção "Segurança e privacidade" descreve o domínio (modelo de tenant, papéis, bancos, terceiros, legislação) e soma-se ao checklist abaixo.

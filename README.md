@@ -159,6 +159,7 @@ As variantes são fotografadas pela sessão principal, uma por vez: ela para o s
 - **Screenshots pela sessão principal**, não por subagent: subagents devolvem só texto, e o app desktop do Claude Code mostra as imagens direto na conversa. Nada de salvar prints em disco.
 - **Fotografia de variantes é serial**, porque todas disputam a porta do serviço de front.
 - **Dois revisores em paralelo** em todo pipeline: `reviewer` (qualidade, escopo) e `security-reviewer` (segurança e dados pessoais). Bloqueador de qualquer um volta para o implementer, no máximo 2 ciclos.
+- **Modelo por papel.** `fable` no `planner` e no `security-reviewer`, onde um erro custa mais e o volume de tokens é baixo; `opus` no `implementer`, `ui-implementer` e `reviewer`, que gastam mais tokens; `sonnet` no `tester`. Os aliases acompanham a versão mais nova de cada família.
 - **Estado em arquivo, fora dos repositórios**, em `$CREW_WORKTREES/<task>/.crew/`: funciona com vários repos por task e não precisa de `.gitignore`. Os prints de UI continuam fora do disco.
 - **Playwright MCP via Docker** (`--network host`, para alcançar o app em `localhost`), sem exigir Node no host.
 

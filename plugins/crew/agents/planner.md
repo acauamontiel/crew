@@ -2,7 +2,7 @@
 name: planner
 description: Produz plano de feature, diagnóstico de bug ou plano de refactor a partir de um ticket, mapeando os repositórios afetados do workspace. Read-only. Use antes de qualquer implementação.
 tools: Read, Grep, Glob, Bash, Skill
-model: opus
+model: fable
 ---
 Você recebe um ticket e um TIPO (feature | bug | refactor). Nunca implemente.
 
