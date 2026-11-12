@@ -34,16 +34,18 @@
   details[open] > summary::before { content: "▾ "; }
   .cards { display: flex; flex-direction: column; gap: 8px; }
   .empty { color: var(--muted); font-size: 13px; padding: 14px; border: 1px dashed var(--line); border-radius: 8px; text-align: center; }
-  .card { display: grid; grid-template-columns: minmax(0, 1fr) 300px minmax(0, 260px) 44px; gap: 8px 20px; align-items: center;
+  .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 6px 24px; align-items: start;
     background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer; box-shadow: var(--shadow); text-align: left; width: 100%; color: inherit; font: inherit; }
+  .card .side { display: flex; flex-direction: column; gap: 6px; }
   .card:hover, .card:focus-visible { border-color: var(--accent); outline: none; }
   .card.waiting { border-left: 3px solid var(--wait); }
   .card .top { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--muted); }
   .card .title { font-weight: 600; margin: 2px 0; overflow-wrap: anywhere; }
   .card .reason { font-size: 12px; color: var(--wait); background: var(--wait-bg); border-radius: 6px; padding: 3px 8px; margin-top: 4px; display: inline-block; }
-  .card .ago { font-size: 12px; color: var(--muted); text-align: right; }
+  .card .top .cost { margin-left: auto; white-space: nowrap; }
   .steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
-  .step { font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step { font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+  .step small { display: block; font-size: 10px; font-weight: 400; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
   .step::before { content: ""; display: block; height: 4px; border-radius: 2px; background: var(--idle-bg); margin-bottom: 4px; }
   .step.done::before { background: var(--ok); opacity: .55; }
   .step.now { color: var(--text); font-weight: 600; }
@@ -52,15 +54,23 @@
   .card.waiting .step.now { color: var(--wait); }
   .row { display: flex; flex-wrap: wrap; gap: 4px; }
   .card .row + .row { margin-top: 4px; }
+  .cyc { font-size: 11px; color: var(--muted); min-width: 22px; }
+  .row.c + .row.c { margin-top: 4px; }
+  table.usage td:nth-child(n+2), table.usage th:nth-child(n+2) { text-align: right; white-space: nowrap; }
   .chip { font-size: 11px; border-radius: 999px; padding: 1px 8px; background: var(--idle-bg); color: var(--muted); white-space: nowrap; }
   .chip.ok { background: var(--ok-bg); color: var(--ok); }
   .chip.warn { background: var(--warn-bg); color: var(--warn); }
   .chip.bad { background: var(--bad-bg); color: var(--bad); }
   .chip.type { background: transparent; border: 1px solid var(--line); }
   .chip.pr.merged { background: var(--ok-bg); color: var(--ok); }
+  .chip.wait { background: var(--wait-bg); color: var(--wait); }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
+  .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+  footer { max-width: 1200px; margin: 0 auto; padding: 10px 20px 24px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
+  footer code { font-size: 12px; }
+  footer .total { margin-left: auto; }
   .summary { display: flex; gap: 6px; flex-wrap: wrap; }
   .summary .chip { font-size: 12px; padding: 2px 10px; }
-  .summary .chip.wait { background: var(--wait-bg); color: var(--wait); }
   dialog { border: none; padding: 0; margin: 0 0 0 auto; height: 100vh; max-height: 100vh; width: min(760px, 100vw); background: var(--panel); color: var(--text); box-shadow: -8px 0 24px rgba(0,0,0,.18); }
   dialog::backdrop { background: rgba(0,0,0,.25); }
   .drawer { padding: 20px 24px 40px; }
@@ -89,17 +99,19 @@
   .banner { background: var(--wait-bg); color: var(--wait); border-radius: 8px; padding: 8px 12px; margin-top: 12px; }
   .error { color: var(--bad); }
   @media (max-width: 960px) {
-    .card { grid-template-columns: minmax(0, 1fr) auto; }
-    .card .main { grid-column: 1; }
-    .card .ago { grid-column: 2; grid-row: 1; align-self: start; }
-    .card .steps, .card .chips { grid-column: 1 / -1; }
+    .card { grid-template-columns: minmax(0, 1fr); }
   }
   @media (max-width: 640px) {
     header { flex-wrap: wrap; gap: 8px 12px; padding: 12px 16px; }
     header .status { margin-left: 0; width: 100%; }
     main { padding: 12px 16px 32px; }
+    .step small { display: none; }
     .step { font-size: 0; }
     .step.now { font-size: 10px; overflow: visible; }
+    .step.now small { display: block; }
+    footer { padding: 10px 16px 24px; }
+    footer .total { margin-left: 0; width: 100%; }
+    table.usage .u-time { display: none; }
     .drawer { padding: 16px; }
     .hist li { flex-direction: column; gap: 0; }
     table.repos thead { display: none; }
@@ -118,17 +130,26 @@
   <span class="status" id="status">carregando…</span>
 </header>
 <main id="board"></main>
+<footer>
+  <code>/crew:feature &lt;ticket&gt;</code><code>/crew:bugfix &lt;ticket&gt;</code><code>/crew:refactor &lt;descrição&gt;</code><code>/crew:ui &lt;tela&gt;</code><code>/crew:status</code>
+  <span class="total" id="total"></span>
+</footer>
 <dialog id="drawer"><div class="drawer" id="drawerBody"></div></dialog>
 
 <script>
+// models: modelo padrão de cada etapa, mostrado enquanto a task ainda não registrou uso nela.
 const STEPS = [
-  { label: 'Plano', stages: ['plano'] },
-  { label: 'Código', stages: ['worktrees', 'variantes', 'implementacao'] },
-  { label: 'Testes', stages: ['testes'] },
-  { label: 'Revisão', stages: ['revisao'] },
-  { label: 'PR', stages: ['pr'] },
-  { label: 'Merge', stages: ['concluida'] },
+  { label: 'Plano', stages: ['plano'], models: ['fable'] },
+  { label: 'Código', stages: ['worktrees', 'variantes', 'implementacao'], models: ['opus'] },
+  { label: 'Testes', stages: ['testes'], models: ['sonnet'] },
+  { label: 'Revisão', stages: ['revisao'], models: ['opus', 'fable'] },
+  { label: 'PR', stages: ['pr'], models: [] },
+  { label: 'Merge', stages: ['concluida'], models: [] },
 ];
+// US$ por milhão de tokens, para uma estimativa grosseira do custo equivalente em API.
+// O número de tokens vem do subagent e não separa entrada, saída e cache; trate como ordem de grandeza.
+const PRICE = { fable: 8, opus: 4, sonnet: 2, haiku: 1 };
+const RISK = { baixo: ['risco baixo', 'ok'], medio: ['risco médio', 'warn'], alto: ['risco alto', 'bad'] };
 const SECTIONS = [
   { key: 'wait', title: 'Precisa de você', empty: 'Nada esperando você.' },
   { key: 'active', title: 'Em andamento', empty: 'Nenhuma task em andamento.' },
@@ -137,7 +158,6 @@ const SECTIONS = [
 ];
 const openSections = new Set();
 const STAGE_LABEL = { plano: 'plano', worktrees: 'worktrees', variantes: 'variantes', implementacao: 'implementação', testes: 'testes', revisao: 'revisão', pr: 'PR', concluida: 'concluída', cancelada: 'cancelada' };
-const VERDICT = { ok: ['ok', 'ok'], sugestoes: ['sugestões', 'warn'], bloqueadores: ['bloqueadores', 'bad'], pendente: ['pendente', ''] };
 const POLL_MS = 4000;
 
 let tasks = [];
@@ -158,6 +178,30 @@ function ago(iso) {
   if (s < 3600) return `${Math.floor(s / 60)} min`;
   if (s < 86400) return `${Math.floor(s / 3600)} h`;
   return `${Math.floor(s / 86400)} d`;
+}
+function dur(ms) {
+  const m = Math.max(0, Math.round(ms / 60000));
+  if (m < 60) return `${m} min`;
+  if (m < 1440) return `${Math.floor(m / 60)} h${m % 60 ? ` ${String(m % 60).padStart(2, '0')}` : ''}`;
+  return `${Math.floor(m / 1440)} d`;
+}
+function elapsed(t) {
+  const start = Date.parse(t.created);
+  const end = ['concluida', 'cancelada'].includes(t.stage) ? Date.parse(t.updated) : Date.now();
+  return start && end ? dur(end - start) : '';
+}
+const usageOf = (t) => Array.isArray(t.usage) ? t.usage : [];
+const tokensOf = (list) => list.reduce((n, u) => n + (Number(u.tokens) || 0), 0);
+const costOf = (list) => list.reduce((n, u) => n + (Number(u.tokens) || 0) / 1e6 * (PRICE[u.model] || 0), 0);
+function tok(n) {
+  if (n >= 1e6) return `${(n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} M`;
+  if (n >= 1e3) return `${Math.round(n / 1e3)}k`;
+  return String(n);
+}
+const usd = (v) => `~US$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function costLine(list) {
+  const n = tokensOf(list);
+  return n ? `${tok(n)} tokens · ${usd(costOf(list))}` : '';
 }
 function fmt(iso) {
   const d = new Date(iso);
@@ -199,40 +243,58 @@ function sectionOf(t) {
   return t.waiting ? 'wait' : 'active';
 }
 
-function verdictChip(name, v) {
-  if (!v) return '';
-  const [label, cls] = VERDICT[v] || [v, ''];
-  return `<span class="chip ${cls}" title="${esc(name)}">${esc(name)}: ${esc(label)}</span>`;
+// Etapa de cada agente: um implementer retomado na revisão continua contando em Código.
+const AGENT_STEP = { planner: 'Plano', implementer: 'Código', 'ui-implementer': 'Código', tester: 'Testes', reviewer: 'Revisão', 'security-reviewer': 'Revisão' };
+function stepModels(t, s) {
+  const used = [...new Set(usageOf(t).filter((u) => AGENT_STEP[u.agent] === s.label).map((u) => u.model))];
+  return (used.length ? used : s.models).join(' · ');
 }
-
 function steps(t) {
   const now = STEPS.findIndex((s) => s.stages.includes(t.stage));
   return `<div class="steps" aria-label="etapa: ${esc(STAGE_LABEL[t.stage] || t.stage)}">${STEPS.map((s, i) => {
     const cls = t.stage === 'concluida' ? 'done' : i < now ? 'done' : i === now ? 'now' : '';
-    return `<span class="step ${cls}">${esc(s.label)}</span>`;
+    const sub = s.label === 'PR' && i === now ? 'aberto' : stepModels(t, s);
+    return `<span class="step ${cls}">${esc(s.label)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>`;
   }).join('')}</div>`;
+}
+const VCLS = { ok: 'ok', sugestoes: 'warn', bloqueadores: 'bad' };
+// Uma linha por ciclo: testes, reviewer e security do mesmo ciclo lado a lado.
+function cycles(t, limit) {
+  const tests = t.tests || [], reviews = t.reviews || [];
+  const nums = [...new Set([...tests, ...reviews].map((x) => x.cycle))].sort((a, b) => a - b);
+  return nums.slice(-limit).map((c) => {
+    const tst = tests.find((x) => x.cycle === c), rv = reviews.find((x) => x.cycle === c);
+    return `<div class="row c"><span class="cyc">C${esc(c)}</span>
+      ${tst ? `<span class="chip ${tst.result === 'verde' ? 'ok' : 'bad'}">${tst.result === 'verde' ? 'testes' : `testes: ${esc(tst.failures)} falha(s)`}</span>` : ''}
+      ${rv ? `<span class="chip ${VCLS[rv.reviewer] || ''}" title="reviewer: ${esc(rv.reviewer)}">review</span><span class="chip ${VCLS[rv.security] || ''}" title="security: ${esc(rv.security)}">seg</span>` : ''}
+    </div>`;
+  }).join('');
+}
+function riskChip(t) {
+  const r = RISK[t.risk];
+  return r ? `<span class="chip ${r[1]}">${r[0]}</span>` : '';
 }
 
 function card(t) {
-  const lastTest = (t.tests || []).at(-1);
-  const lastReview = (t.reviews || []).at(-1);
   const prs = (t.repos || []).filter((r) => r.pr);
-  return `<button class="card ${t.waiting && sectionOf(t) === 'wait' ? 'waiting' : ''}" data-dir="${esc(t._dir)}">
+  const waiting = t.waiting && sectionOf(t) === 'wait';
+  const feedback = (t.artifacts || []).filter((a) => /^feedback-\d+\.md$/.test(a.path)).at(-1);
+  const cost = [elapsed(t), costLine(usageOf(t))].filter(Boolean).join(' · ');
+  return `<button class="card ${waiting ? 'waiting' : ''}" data-dir="${esc(t._dir)}">
     <div class="main">
-      <div class="top"><span class="chip type">${esc(t.type)}</span>${t.id ? `<span>#${esc(t.id)}</span>` : ''}</div>
+      <div class="top"><span class="chip type">${esc(t.type)}</span>${t.id ? `<span>#${esc(t.id)}</span>` : ''}${riskChip(t)}<span class="cost" title="atualizado há ${esc(ago(t.updated))}">${esc(cost)}</span></div>
       <div class="title">${esc(t.title || t.slug || t._dir)}</div>
-      ${t.waiting && sectionOf(t) === 'wait' ? `<div class="reason">${esc(t.waiting.reason)}</div>` : ''}
+      ${waiting ? `<div class="reason">${esc(t.waiting.reason)}</div>` : ''}
+      ${t.stage === 'cancelada' ? '' : steps(t)}
     </div>
-    ${t.stage === 'cancelada' ? '<div class="steps"></div>' : steps(t)}
-    <div class="chips">
-      <div class="row">${(t.repos || []).map((r) => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>
+    <div class="side">
+      ${cycles(t, 3)}
       <div class="row">
-        ${lastTest ? `<span class="chip ${lastTest.result === 'verde' ? 'ok' : 'bad'}">testes: ${lastTest.result === 'verde' ? 'verde' : `${esc(lastTest.failures)} falha(s)`}</span>` : ''}
-        ${lastReview ? verdictChip('review', lastReview.reviewer) + verdictChip('seg', lastReview.security) : ''}
-        ${prs.map((r) => `<span class="chip pr ${esc(r.pr.state)}">PR ${esc(r.name)}${r.pr.state === 'merged' ? ' ✓' : r.pr.state === 'closed' ? ' ✕' : ''}</span>`).join('')}
+        ${(t.repos || []).map((r) => `<span class="chip">${esc(r.name)}</span>`).join('')}
+        ${feedback ? `<span class="chip wait">${esc(feedback.path)}</span>` : ''}
+        ${prs.map((r) => `<span class="chip pr ${esc(r.pr.state)}">PR ${esc(r.name)}${r.pr.number ? ` #${esc(r.pr.number)}` : ''}${r.pr.state === 'merged' ? ' ✓' : r.pr.state === 'closed' ? ' ✕' : ''}</span>`).join('')}
       </div>
     </div>
-    <div class="ago">${esc(ago(t.updated))}</div>
   </button>`;
 }
 
@@ -240,10 +302,16 @@ function render() {
   const groups = Object.fromEntries(SECTIONS.map((s) => [s.key, []]));
   tasks.forEach((t) => groups[sectionOf(t)].push(t));
   const n = (k) => groups[k].length;
+  const today = new Date().toDateString();
+  const todayUsage = tasks.flatMap(usageOf).filter((u) => new Date(u.at).toDateString() === today);
   $('summary').innerHTML = [
     n('wait') ? `<span class="chip wait">${n('wait')} precisa(m) de você</span>` : '',
     `<span class="chip">${n('active')} em andamento</span>`,
+    todayUsage.length ? `<span class="chip" title="soma do uso registrado hoje">hoje: ${esc(costLine(todayUsage))}</span>` : '',
   ].join('');
+  const running = [...groups.wait, ...groups.active];
+  const runCost = costLine(running.flatMap(usageOf));
+  $('total').textContent = `${running.length} aberta(s)${runCost ? ` · ${runCost} equivalente em API` : ''}`;
   $('board').innerHTML = SECTIONS.map((s) => {
     const list = groups[s.key];
     const body = `<div class="cards">${list.map(card).join('') || `<div class="empty">${esc(s.empty || '')}</div>`}</div>`;
@@ -267,26 +335,53 @@ function renderDrawer(resetDoc = true) {
   $('drawerBody').innerHTML = `
     <button class="close" id="closeDrawer">fechar</button>
     <h3>${esc(t.title || t.slug || t._dir)}</h3>
-    <div class="meta">${esc(t.type)}${t.id ? ` · #${esc(t.id)}` : ''} · ${esc(STAGE_LABEL[t.stage] || t.stage)} · atualizado ${esc(fmt(t.updated))}</div>
+    <div class="meta">${esc(t.type)}${t.id ? ` · #${esc(t.id)}` : ''} · ${esc(STAGE_LABEL[t.stage] || t.stage)} · ${esc(elapsed(t))} desde o início · atualizado ${esc(fmt(t.updated))}</div>
+    ${t.risk ? `<div class="row" style="margin-top:6px">${riskChip(t)}</div>` : ''}
     ${t.waiting ? `<div class="banner">Precisa de você: ${esc(t.waiting.reason)} (desde ${esc(fmt(t.waiting.since))})</div>` : ''}
     <h4>Repositórios</h4>
     ${repos.length ? `<table class="repos"><thead><tr><th>repo</th><th>tipo</th><th>branch</th><th>base</th><th>PR</th></tr></thead><tbody>
       ${repos.map((r) => `<tr><td class="r-name">${esc(r.name)}</td><td data-label="tipo">${esc(r.kind)}</td><td data-label="branch"><code>${esc(r.branch)}</code></td><td data-label="base">${esc(r.base)}</td>
         <td data-label="PR">${r.pr ?`<a href="${esc(safeUrl(r.pr.url))}" target="_blank" rel="noopener noreferrer">#${esc(r.pr.number)}</a> ${esc(r.pr.state)}` : '—'}</td></tr>`).join('')}
     </tbody></table>` : '<div class="meta">ainda não definidos</div>'}
-    ${(t.tests || []).length || (t.reviews || []).length ? `<h4>Ciclos</h4><div class="row">
-      ${(t.tests || []).map((x) => `<span class="chip ${x.result === 'verde' ? 'ok' : 'bad'}">testes ${esc(x.cycle)}: ${x.result === 'verde' ? 'verde' : `${esc(x.failures)} falha(s)`}</span>`).join('')}
-      ${(t.reviews || []).map((x) => verdictChip(`review ${x.cycle}`, x.reviewer) + verdictChip(`seg ${x.cycle}`, x.security)).join('')}
-    </div>` : ''}
+    ${(t.tests || []).length || (t.reviews || []).length ? `<h4>Ciclos</h4>${cycles(t, Infinity)}` : ''}
     <h4>Artefatos</h4>
-    ${arts.length ? `<div class="arts">${arts.map((a, i) => `<button data-art="${i}" aria-pressed="${openArtifact === i}">${esc(a.label || a.path)}</button>`).join('')}</div>` : '<div class="meta">nenhum ainda</div>'}
+    ${arts.length ? `<div class="arts">${arts.map((a, i) => `<button data-art="${i}" aria-pressed="${openArtifact === i}"><span class="dot ${artStatus(t, a)}"></span>${esc(a.label || a.path)}</button>`).join('')}</div>` : '<div class="meta">nenhum ainda</div>'}
     <div class="doc" id="doc" ${openArtifact === null ? 'hidden' : ''}></div>
+    ${usageOf(t).length ? `<h4>Uso por agente</h4>${usageTable(t)}` : ''}
     <h4>Histórico</h4>
     <ul class="hist">${(t.history || []).slice().reverse().map((h) => `<li><time>${esc(fmt(h.at))}</time><span>${esc(STAGE_LABEL[h.stage] || h.stage || '')}${h.note ? ` · ${esc(h.note)}` : ''}</span></li>`).join('')}</ul>
   `;
   $('closeDrawer').onclick = () => $('drawer').close();
   $('drawerBody').querySelectorAll('[data-art]').forEach((b) => { b.onclick = () => showArtifact(Number(b.dataset.art)); });
   if (openArtifact !== null) showArtifact(openArtifact);
+}
+
+// Ponto de status do artefato: o veredito do ciclo a que ele pertence, ou neutro.
+function artStatus(t, a) {
+  let r;
+  if ((r = a.path.match(/^testes\/ciclo-(\d+)\.md$/))) {
+    const x = (t.tests || []).find((y) => y.cycle === Number(r[1]));
+    return x ? (x.result === 'verde' ? 'ok' : 'bad') : '';
+  }
+  if ((r = a.path.match(/^revisao\/ciclo-(\d+)\/(reviewer|security)\.md$/))) {
+    const x = (t.reviews || []).find((y) => y.cycle === Number(r[1]));
+    return x ? VCLS[x[r[2]]] || '' : '';
+  }
+  return 'ok';
+}
+function usageTable(t) {
+  const by = {};
+  usageOf(t).forEach((u) => {
+    const k = `${u.agent}|${u.model}`;
+    by[k] = by[k] || { agent: u.agent, model: u.model, runs: 0, list: [], ms: 0 };
+    by[k].runs++; by[k].list.push(u); by[k].ms += Number(u.duration_ms) || 0;
+  });
+  const rows = Object.values(by).sort((a, b) => tokensOf(b.list) - tokensOf(a.list));
+  return `<table class="usage"><thead><tr><th>agente</th><th>tokens</th><th class="u-time">tempo</th><th>custo</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td>${esc(r.agent)} <span class="meta">${esc(r.model)}${r.runs > 1 ? ` · ${r.runs}×` : ''}</span></td><td>${esc(tok(tokensOf(r.list)))}</td><td class="u-time">${r.ms ? esc(dur(r.ms)) : '—'}</td><td>${esc(usd(costOf(r.list)))}</td></tr>`).join('')}
+    <tr><td><strong>total</strong></td><td><strong>${esc(tok(tokensOf(usageOf(t))))}</strong></td><td class="u-time"></td><td><strong>${esc(usd(costOf(usageOf(t))))}</strong></td></tr>
+  </tbody></table>
+  <div class="meta" style="margin-top:6px">Custo estimado pelo total de tokens de cada subagent e o preço de entrada do modelo; serve como ordem de grandeza.</div>`;
 }
 
 async function showArtifact(i) {

@@ -7,6 +7,7 @@ Este repositório é um marketplace de plugins do Claude Code com um plugin, `cr
 - **Agentes:** `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer`, `ui-implementer`
 - **Comandos:** `/crew:feature`, `/crew:bugfix`, `/crew:refactor`, `/crew:ui`, `/crew:status`
 - **Skills internos:** `crew:worktrees` (perfil do workspace, repositórios, branch base e worktrees) e `crew:state` (estado da task em disco), usados pelos comandos
+- **`crew-state`:** script do plugin (no PATH da ferramenta Bash enquanto o plugin está ativo) que é o único jeito de mudar o `task.json` de uma task
 - **Dashboard:** painel local das tasks, servido por `bin/dashboard`
 - **MCP:** Playwright via Docker, para os screenshots de UI
 
@@ -61,8 +62,10 @@ Ele lista os repositórios encontrados e:
 - mescla em `<workspace>/.claude/settings.json`:
   - `CREW_WORKTREES`: onde ficam as worktrees das tasks. O padrão é a pasta `worktrees` ao lado do workspace (para `~/code/acme`, `~/code/worktrees`); troque com `--worktrees <dir>`;
   - `additionalDirectories` com essa pasta, para o Claude Code poder editar as worktrees;
-  - permissões: libera `docker compose`, `git` e os comandos de PR de `gh`, `glab` e `tea`; nega `git push --force` e a leitura de qualquer `.env`;
+  - permissões: libera `docker compose`, `git`, `crew-state` e os comandos de PR de `gh`, `glab` e `tea`; nega `git push --force` e a leitura de qualquer `.env`;
 - cria `<workspace>/.claude/crew.md`, o perfil do workspace, a partir do modelo, se ainda não existir.
+
+Rode de novo depois de atualizar o crew: ele é idempotente e acrescenta as permissões novas (na 0.7.0, a do `crew-state`) sem mexer no que já existe nem no perfil.
 
 Nos repositórios com front-end, rode uma vez dentro do Claude Code, a partir do repo, para o impeccable aprender o design do projeto antes das primeiras variantes:
 
@@ -136,11 +139,20 @@ Os comandos são sempre chamados com o prefixo `/crew:`:
 ~/code/crew/bin/dashboard ~/code/acme
 ```
 
-Abre em http://localhost:7420 o painel com todas as tasks do workspace, atualizado a cada poucos segundos e legível do celular ao monitor grande. As tasks ficam em seções: **Precisa de você** no topo (paradas esperando sua resposta: aprovar o plano, escolher a variante, bloqueadores depois de 2 ciclos, possível incidente de segurança), depois **Em andamento**, e **Concluídas** e **Canceladas** recolhidas. Cada task mostra uma barra de etapas (Plano, Código, Testes, Revisão, PR, Merge), os repositórios, o último ciclo de testes e os vereditos dos dois revisores. O clique abre os detalhes: branches, PRs, todos os ciclos, o histórico e os artefatos (plano, resultados de teste e reviews de cada ciclo, descrição dos PRs).
+Abre em http://localhost:7420 o painel com todas as tasks do workspace, atualizado a cada poucos segundos e legível do celular ao monitor grande. As tasks ficam em seções: **Precisa de você** no topo (paradas esperando sua resposta: aprovar o plano, escolher a variante, bloqueadores depois de 2 ciclos, possível incidente de segurança), depois **Em andamento**, e **Concluídas** e **Canceladas** recolhidas. Cada task mostra:
+
+- o risco classificado pelo planner (baixo, médio, alto), o tempo desde o início, os tokens gastos pelos subagents e o custo estimado;
+- a barra de etapas (Plano, Código, Testes, Revisão, PR, Merge), com o modelo usado em cada uma;
+- uma linha por ciclo com os vereditos de testes, reviewer e security-reviewer;
+- os repositórios, os PRs e a sua última resposta guardada (`feedback-N.md`).
+
+O clique abre os detalhes: branches, PRs, todos os ciclos, os artefatos com um ponto de status (plano, suas respostas, resultados de teste e reviews de cada ciclo, descrição dos PRs), o uso de tokens por agente e o histórico. No topo aparece o total do dia; no rodapé, os comandos e o total das tasks abertas.
+
+O custo é uma ordem de grandeza: o número de tokens que cada subagent devolve não separa entrada, saída e cache, e o dashboard multiplica pelo preço de entrada do modelo (tabela `PRICE` em `dashboard/index.html`).
 
 Opções: `--port N` (padrão 7420), `--worktrees <dir>` (em vez de ler `CREW_WORKTREES` do `settings.json` do workspace) e `--stop` para derrubar.
 
-O dashboard só lê. Ele roda num container `nginx:alpine` publicado só em `127.0.0.1`, com `$CREW_WORKTREES` montado como somente leitura, e serve apenas a lista de tasks e os arquivos `.json`/`.md` de `<task>/.crew/`; código das worktrees e links simbólicos (como o `.env`) não são servidos. A sessão principal é a única que grava o estado; os subagents nunca escrevem nele. O formato está no skill [`crew:state`](plugins/crew/skills/state/SKILL.md).
+O dashboard só lê. Ele roda num container `nginx:alpine` publicado só em `127.0.0.1`, com `$CREW_WORKTREES` montado como somente leitura, e serve apenas a lista de tasks e os arquivos `.json`/`.md` de `<task>/.crew/`; código das worktrees e links simbólicos (como o `.env`) não são servidos. A sessão principal é a única que grava o estado, sempre pelo `crew-state`; os subagents nunca escrevem nele. Os comandos e o formato estão no skill [`crew:state`](plugins/crew/skills/state/SKILL.md).
 
 Se a sessão de uma task fechar no meio, o estado continua no disco: rode o mesmo comando de novo com o mesmo ticket e ele oferece continuar da etapa em que parou.
 
@@ -161,13 +173,17 @@ As variantes são fotografadas pela sessão principal, uma por vez: ela para o s
 - **Dois revisores em paralelo** em todo pipeline: `reviewer` (qualidade, escopo) e `security-reviewer` (segurança e dados pessoais). Bloqueador de qualquer um volta para o implementer, no máximo 2 ciclos.
 - **Modelo por papel.** `fable` no `planner` e no `security-reviewer`, onde um erro custa mais e o volume de tokens é baixo; `opus` no `implementer`, `ui-implementer` e `reviewer`, que gastam mais tokens; `sonnet` no `tester`. Os aliases acompanham a versão mais nova de cada família.
 - **Estado em arquivo, fora dos repositórios**, em `$CREW_WORKTREES/<task>/.crew/`: funciona com vários repos por task e não precisa de `.gitignore`. Os prints de UI continuam fora do disco.
+- **Ticket é dado, não instrução.** O texto do ticket (e o que vier dele: comentários, stack traces, eventos do monitor de erros) chega aos comandos e ao planner entre marcas `<ticket>`. Ele descreve o problema, mas nunca muda regras, permissões ou etapas; pedidos fora do escopo são ignorados e apontados.
+- **Estado só pelo `crew-state`.** O modelo não reescreve o `task.json`: cada mudança é uma chamada curta do script, que valida os valores e grava de forma atômica com `jq`. Gasta menos tokens e não corrompe o arquivo.
+- **Risco informa, não corta.** O planner classifica o risco para chamar a sua atenção; os dois revisores rodam em toda task, qualquer que seja o risco.
+- **Suas respostas viram artefato.** Quando você responde a uma parada com mais do que sim ou não, a resposta vai para `feedback-N.md`, aparece no dashboard e segue para os próximos subagents.
 - **Playwright MCP via Docker** (`--network host`, para alcançar o app em `localhost`), sem exigir Node no host.
 
 ## Estrutura
 
 ```
 .claude-plugin/marketplace.json     marketplace "crew"
-plugins/crew/                       plugin (agents/, commands/, skills/worktrees/, skills/state/, .mcp.json)
+plugins/crew/                       plugin (agents/, commands/, skills/worktrees/, skills/state/, bin/crew-state, .mcp.json)
 dashboard/                          index.html do dashboard e nginx.conf
 templates/crew.md                   modelo do perfil do workspace
 templates/user-settings.json        env mesclado em ~/.claude/settings.json

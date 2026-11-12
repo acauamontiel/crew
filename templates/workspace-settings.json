@@ -6,6 +6,7 @@
     "allow": [
       "Bash(docker compose *)",
       "Bash(git *)",
+      "Bash(crew-state *)",
       "Bash(gh pr *)",
       "Bash(glab mr *)",
       "Bash(tea pulls *)",

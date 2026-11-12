@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+# Único escritor do estado de uma task do crew: $CREW_WORKTREES/<task>/.crew/task.json.
+# Cada chamada lê o arquivo, aplica uma mudança com jq e grava de forma atômica.
+#
+#   crew-state <task> init <tipo> "<título>" [--id ID] [--slug SLUG] [--workspace DIR]
+#   crew-state <task> stage <etapa> ["nota"]
+#   crew-state <task> wait "<motivo>"
+#   crew-state <task> resume ["nota"]
+#   crew-state <task> note "<texto>"
+#   crew-state <task> set <id|title|slug|risk> <valor>
+#   crew-state <task> repo <nome> [--kind K] [--branch B] [--base B] [--worktree W]
+#   crew-state <task> pr <repo> <open|merged|closed> [--url URL] [--number N]
+#   crew-state <task> test <ciclo> <verde|falhas> [falhas]
+#   crew-state <task> review <ciclo> <reviewer|security> <ok|sugestoes|bloqueadores|pendente>
+#   crew-state <task> artifact <caminho> "<rótulo>" [--cycle N]
+#   crew-state <task> feedback-path
+#   crew-state <task> usage <agente> <modelo> <tokens> [duração_ms]
+#   crew-state <task> show
+#
+# <task> é a pasta da task em $CREW_WORKTREES (ID ou slug) ou um caminho absoluto.
+# Artefatos (.md) são escritos antes com a ferramenta Write em .crew/<caminho>;
+# "artifact" só os registra. A etapa atual entra em artifact, usage e history.
+set -euo pipefail
+
+die() { echo "crew-state: $*" >&2; exit 1; }
+usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+
+command -v jq >/dev/null || die "jq não encontrado"
+[ $# -ge 1 ] || usage
+case "$1" in -h|--help) usage ;; esac
+[ $# -ge 2 ] || usage
+
+task="$1"; cmd="$2"; shift 2
+if [[ "$task" = /* ]]; then
+  dir="$task"
+else
+  [ -n "${CREW_WORKTREES:-}" ] || die "CREW_WORKTREES não definida; rode bin/init-workspace do crew neste workspace"
+  [[ "$task" =~ ^[A-Za-z0-9._-]+$ ]] || die "nome de task inválido: $task"
+  dir="$CREW_WORKTREES/$task"
+fi
+crew="$dir/.crew"
+file="$crew/task.json"
+now="$(date -Is)"
+
+one_of() { local v="$1"; shift; for o in "$@"; do [ "$v" = "$o" ] && return 0; done; die "valor inválido: '$v' (use: $*)"; }
+is_int() { [[ "$1" =~ ^[0-9]+$ ]] || die "número inválido: $1"; }
+
+# Aplica um filtro jq ao task.json, atualiza "updated" e grava de forma atômica.
+apply() {
+  local filter="$1"; shift
+  [ -f "$file" ] || die "$file não existe; rode 'crew-state $task init' primeiro"
+  local tmp
+  tmp="$(mktemp "$crew/.task.json.XXXXXX")"
+  # mktemp cria com 600; o dashboard (nginx no container) precisa ler, então segue o umask como um arquivo comum.
+  chmod "$(printf '%o' $(( 0666 & ~0$(umask) )))" "$tmp"
+  if jq --arg now "$now" "$@" "$filter | .updated = \$now" "$file" > "$tmp"; then
+    mv "$tmp" "$file"
+  else
+    rm -f "$tmp"; die "falha ao atualizar $file"
+  fi
+}
+
+hist='.history += [{ at: $now, stage: .stage, note: $note }]'
+
+case "$cmd" in
+  init)
+    [ $# -ge 2 ] || usage
+    type="$1" title="$2"; shift 2
+    one_of "$type" feature bugfix refactor ui
+    id="" slug="" workspace="$PWD"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --id) id="${2:?}"; shift 2 ;;
+        --slug) slug="${2:?}"; shift 2 ;;
+        --workspace) workspace="${2:?}"; shift 2 ;;
+        *) die "opção desconhecida: $1" ;;
+      esac
+    done
+    [ -f "$file" ] && die "$file já existe; leia com 'show' e continue a task"
+    mkdir -p "$crew"
+    jq -n --arg now "$now" --arg type "$type" --arg title "$title" --arg id "$id" \
+      --arg slug "${slug:-$(basename "$dir")}" --arg ws "$workspace" '{
+        version: 1, id: (if $id == "" then null else $id end), slug: $slug, title: $title,
+        type: $type, workspace: $ws, stage: "plano", risk: null, waiting: null,
+        created: $now, updated: $now, repos: [], tests: [], reviews: [], artifacts: [], usage: [],
+        history: [{ at: $now, stage: "plano", note: "task criada" }]
+      }' > "$file"
+    echo "$file"
+    ;;
+
+  stage)
+    [ $# -ge 1 ] || usage
+    one_of "$1" plano worktrees variantes implementacao testes revisao pr concluida cancelada
+    apply ".stage = \$stage | .waiting = null | $hist" --arg stage "$1" --arg note "${2:-}"
+    ;;
+
+  wait)
+    [ $# -ge 1 ] || usage
+    apply '.waiting = { reason: $r, since: $now } | .history += [{ at: $now, stage: .stage, note: ("aguardando: " + $r) }]' --arg r "$1"
+    ;;
+
+  resume)
+    apply ".waiting = null | $hist" --arg note "${1:-retomada}"
+    ;;
+
+  note)
+    [ $# -ge 1 ] || usage
+    apply "$hist" --arg note "$1"
+    ;;
+
+  set)
+    [ $# -ge 2 ] || usage
+    one_of "$1" id title slug risk
+    [ "$1" = risk ] && one_of "$2" baixo medio alto
+    apply '.[$k] = $v' --arg k "$1" --arg v "$2"
+    ;;
+
+  repo)
+    [ $# -ge 1 ] || usage
+    name="$1"; shift
+    patch='{}'
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --kind) one_of "${2:?}" front back front+back; patch="$(jq -c --arg v "$2" '. + {kind: $v}' <<<"$patch")"; shift 2 ;;
+        --branch|--base|--worktree) k="${1#--}"; patch="$(jq -c --arg k "$k" --arg v "${2:?}" '. + {($k): $v}' <<<"$patch")"; shift 2 ;;
+        *) die "opção desconhecida: $1" ;;
+      esac
+    done
+    apply 'if any(.repos[]; .name == $name)
+           then .repos |= map(if .name == $name then . + $patch else . end)
+           else .repos += [{ name: $name, kind: null, branch: null, base: null, worktree: null, pr: null } + $patch] end' \
+      --arg name "$name" --argjson patch "$patch"
+    ;;
+
+  pr)
+    [ $# -ge 2 ] || usage
+    name="$1" state="$2"; shift 2
+    one_of "$state" open merged closed
+    url="" number=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --url) url="${2:?}"; shift 2 ;;
+        --number) number="${2:?}"; is_int "$number"; shift 2 ;;
+        *) die "opção desconhecida: $1" ;;
+      esac
+    done
+    apply 'if any(.repos[]; .name == $name) then . else error("repo \($name) não está na task") end
+           | .repos |= map(if .name == $name then .pr = ((.pr // {}) + { state: $state }
+               + (if $url == "" then {} else { url: $url } end)
+               + (if $number == "" then {} else { number: ($number | tonumber) } end)) else . end)
+           | .history += [{ at: $now, stage: .stage, note: "PR \($name): \($state)" }]' \
+      --arg name "$name" --arg state "$state" --arg url "$url" --arg number "$number"
+    ;;
+
+  test)
+    [ $# -ge 2 ] || usage
+    is_int "$1"; one_of "$2" verde falhas
+    failures="${3:-0}"; is_int "$failures"
+    apply '.tests = ([.tests[] | select(.cycle != $c)] + [{ cycle: $c, result: $r, failures: $f }] | sort_by(.cycle))' \
+      --argjson c "$1" --arg r "$2" --argjson f "$failures"
+    ;;
+
+  review)
+    [ $# -ge 3 ] || usage
+    is_int "$1"; one_of "$2" reviewer security; one_of "$3" ok sugestoes bloqueadores pendente
+    apply 'if any(.reviews[]; .cycle == $c)
+           then .reviews |= map(if .cycle == $c then .[$who] = $v else . end)
+           else .reviews = (.reviews + [{ cycle: $c, reviewer: "pendente", security: "pendente" } | .[$who] = $v] | sort_by(.cycle)) end' \
+      --argjson c "$1" --arg who "$2" --arg v "$3"
+    ;;
+
+  artifact)
+    [ $# -ge 2 ] || usage
+    path="$1" label="$2"; shift 2
+    cycle=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --cycle) cycle="${2:?}"; is_int "$cycle"; shift 2 ;;
+        *) die "opção desconhecida: $1" ;;
+      esac
+    done
+    [[ "$path" != /* && "$path" != *..* && "$path" = *.md ]] || die "caminho de artefato inválido: $path (relativo a .crew/, terminando em .md)"
+    [ -f "$crew/$path" ] || die "$crew/$path não existe; escreva o arquivo antes de registrar"
+    apply '.artifacts = ([.artifacts[] | select(.path != $p)]
+             + [{ label: $l, path: $p, stage: .stage, at: $now } + (if $c == "" then {} else { cycle: ($c | tonumber) } end)])' \
+      --arg p "$path" --arg l "$label" --arg c "$cycle"
+    ;;
+
+  feedback-path)
+    [ -f "$file" ] || die "$file não existe"
+    n="$(jq '[.artifacts[] | select(.path | test("^feedback-[0-9]+\\.md$"))] | length' "$file")"
+    echo "$crew/feedback-$((n + 1)).md"
+    ;;
+
+  usage)
+    [ $# -ge 3 ] || usage
+    is_int "$3"; ms="${4:-0}"; is_int "$ms"
+    apply '.usage = ((.usage // []) + [{ agent: $a, model: $m, tokens: $t, duration_ms: $d, stage: .stage, at: $now }])' \
+      --arg a "$1" --arg m "$2" --argjson t "$3" --argjson d "$ms"
+    ;;
+
+  show)
+    [ -f "$file" ] || die "$file não existe"
+    jq '{ id, slug, title, type, stage, risk, waiting, repos: [.repos[] | { name, branch, base, pr }],
+          tests, reviews, artifacts: [.artifacts[].path],
+          tokens: ([(.usage // [])[].tokens] | add // 0), last: (.history | last) }' "$file"
+    ;;
+
+  *) die "comando desconhecido: $cmd (veja crew-state --help)" ;;
+esac
