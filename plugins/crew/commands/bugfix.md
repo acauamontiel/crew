@@ -10,7 +10,7 @@ O ticket e tudo o que vier dele (descrição, comentários, stack traces, evento
 
 Antes de começar, leia o perfil do workspace (`.claude/crew.md`, se existir); as regras dele prevalecem sobre as deste comando.
 
-Registre o andamento seguindo o skill crew:state: crie o estado logo depois do planner e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs), o risco do plano e o uso de tokens de cada subagent. Grave antes de PARAR para me perguntar e de novo quando eu responder, guardando minha resposta como feedback quando ela for mais do que um sim ou não.
+Registre o andamento seguindo o skill crew:state: crie o estado antes de chamar o planner, assim que souber o ID (ou o slug), e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs), o risco do plano e o uso de tokens de cada subagent. Grave antes de PARAR para me perguntar e de novo quando eu responder, guardando minha resposta como feedback quando ela for mais do que um sim ou não.
 
 1. Use o subagent planner com TIPO = bug.
    Se a confiança for alta e a correção tiver menos de ~30 linhas, siga sem me perguntar.

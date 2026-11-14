@@ -10,7 +10,7 @@ O ticket e tudo o que vier dele (descrição, comentários, stack traces, evento
 
 Antes de começar, leia o perfil do workspace (`.claude/crew.md`, se existir); as regras dele prevalecem sobre as deste comando.
 
-Registre o andamento seguindo o skill crew:state: crie o estado logo depois do planner e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs), o risco do plano e o uso de tokens de cada subagent. Grave antes de PARAR para me perguntar e de novo quando eu responder, guardando minha resposta como feedback quando ela for mais do que um sim ou não.
+Registre o andamento seguindo o skill crew:state: crie o estado antes de chamar o planner, assim que souber o ID (ou o slug), e atualize-o a cada passo, gravando os artefatos (plano, testes, reviews, PRs), o risco do plano e o uso de tokens de cada subagent. Grave antes de PARAR para me perguntar e de novo quando eu responder, guardando minha resposta como feedback quando ela for mais do que um sim ou não.
 
 1. Use o subagent planner com TIPO = feature, pedindo além do plano um brief visual com 3 direções de design distintas e nomeadas, e as rotas a fotografar. Ele identifica o repo de front-end (e os de back-end, se a tela precisar de mudança na API). Me mostre e PARE até eu aprovar.
 2. Prepare, seguindo o skill crew:worktrees, uma worktree por direção no repo de front-end (branch e pasta de variante de UI). Rode 3 subagents ui-implementer em paralelo, um por direção, todos com o mesmo brief.

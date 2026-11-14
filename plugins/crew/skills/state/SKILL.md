@@ -9,7 +9,7 @@ allowed-tools: Bash(crew-state *)
 Cada task guarda o próprio andamento em `$CREW_WORKTREES/<task>/.crew/`, onde `<task>` é a mesma pasta definida no skill crew:worktrees (`<id ou slug>`). O dashboard (`bin/dashboard`) e o `/crew:status` leem dali.
 
 - **Único escritor:** só a sessão principal grava o estado, e o `task.json` só muda pelo comando `crew-state` (vem no plugin e está no PATH). Nunca escreva nem edite o `task.json` com Write ou Edit. Subagents nunca escrevem em `.crew/`.
-- **Quando:** logo depois do planner (`init`) e a cada passo do comando. Grave **antes** de PARAR para me perguntar (`wait`), e de novo quando eu responder (`resume`).
+- **Quando:** antes de chamar o planner, assim que o ID (ou o slug) estiver definido (`init`), para a task aparecer no dashboard enquanto o planner trabalha; depois, a cada passo do comando. Grave **antes** de PARAR para me perguntar (`wait`), e de novo quando eu responder (`resume`).
 - **Artefatos** (Markdown) você escreve com a ferramenta Write em `.crew/<caminho>` e depois registra com `crew-state <task> artifact`.
 - **Nunca grave** segredos, conteúdo de `.env`, tokens, nem exemplos de dado pessoal (nome, e-mail, CPF etc. de pessoas reais) em nenhum arquivo de `.crew/`. Nos achados, descreva o problema sem copiar o dado.
 - Se um `crew-state` falhar, leia o erro e corrija a chamada; não contorne escrevendo o JSON à mão.
@@ -20,7 +20,8 @@ Cada task guarda o próprio andamento em `$CREW_WORKTREES/<task>/.crew/`, onde `
 
 | Momento | Comando |
 | --- | --- |
-| Planner terminou | `crew-state <task> init <feature\|bugfix\|refactor\|ui> "<título>" [--id <ID>] [--slug <slug>] --workspace <workspace>` |
+| Antes do planner | `crew-state <task> init <feature\|bugfix\|refactor\|ui> "<título provisório, do ticket>" [--id <ID>] [--slug <slug>] --workspace <workspace>` |
+| Planner terminou | `crew-state <task> set title "<título do plano>"` se mudou, `set risk`, `repo` para cada repo afetado e o artefato `plano.md` |
 | Risco do plano | `crew-state <task> set risk <baixo\|medio\|alto>` (o planner classifica; use o que ele disser) |
 | Repos afetados, worktrees | `crew-state <task> repo <nome> [--kind front\|back\|front+back] [--branch B] [--base B] [--worktree DIR]` (pode repetir; completa o que faltar) |
 | Mudança de etapa | `crew-state <task> stage <etapa> "<nota curta>"` (limpa `waiting`) |
@@ -72,6 +73,7 @@ Os prints de UI não vão para o disco, nem aqui.
 
 | Momento do comando | `stage` | `wait` |
 | --- | --- | --- |
+| Planner rodando (logo depois do `init`) | `plano` | — |
 | Planner terminou e você vai me mostrar o plano | `plano` | "aprovar o plano" (se o comando mandar parar) |
 | Eu recusei o plano ou desisti da task | `cancelada` | — |
 | Preparando worktrees | `worktrees` | — |
