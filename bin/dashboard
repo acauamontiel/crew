@@ -42,8 +42,12 @@ mkdir -p "$worktrees"
 worktrees="$(cd "$worktrees" && pwd)"
 
 docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+# Roda como o seu usuário, para ler $CREW_WORKTREES mesmo com permissão 700, sem abrir a pasta
+# para outros usuários. Sem root, o nginx escuta na 8080 e precisa de cache e pid graváveis.
 docker run -d --rm --name "$CONTAINER" \
-  -p "127.0.0.1:$port:80" \
+  --user "$(id -u):$(id -g)" \
+  --tmpfs "/var/cache/nginx:uid=$(id -u),gid=$(id -g)" --tmpfs "/run:uid=$(id -u),gid=$(id -g)" \
+  -p "127.0.0.1:$port:8080" \
   -v "$worktrees:/srv/tasks:ro" \
   -v "$CREW_DIR/dashboard:/srv/app:ro" \
   -v "$CREW_DIR/dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
