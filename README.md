@@ -150,9 +150,9 @@ O clique abre os detalhes: branches, PRs, todos os ciclos, os artefatos com um p
 
 O custo é uma ordem de grandeza: o número de tokens que cada subagent devolve não separa entrada, saída e cache, e o dashboard multiplica pelo preço de entrada do modelo (tabela `PRICE` em `dashboard/index.html`).
 
-Opções: `--port N` (padrão 7420), `--worktrees <dir>` (em vez de ler `CREW_WORKTREES` do `settings.json` do workspace) e `--stop` para derrubar.
+Opções: `--port N` (padrão 7420), `--worktrees <dir>` (em vez de ler `CREW_WORKTREES` do `settings.json` do workspace), `--lan` para abrir de outro aparelho da rede (o celular, por exemplo; o script mostra o endereço) e `--stop` para derrubar.
 
-O dashboard só lê. Ele roda num container `nginx:alpine` publicado só em `127.0.0.1`, com `$CREW_WORKTREES` montado como somente leitura, e serve apenas a lista de tasks e os arquivos `.json`/`.md` de `<task>/.crew/`; código das worktrees e links simbólicos (como o `.env`) não são servidos. A sessão principal é a única que grava o estado, sempre pelo `crew-state`; os subagents nunca escrevem nele. Os comandos e o formato estão no skill [`crew:state`](plugins/crew/skills/state/SKILL.md).
+O dashboard só lê. Ele roda num container `nginx:alpine`, com o seu usuário, publicado só em `127.0.0.1` (ou em todas as interfaces com `--lan`: aí qualquer aparelho da rede vê planos, reviews e histórico), com `$CREW_WORKTREES` montado como somente leitura, e serve apenas a lista de tasks e os arquivos `.json`/`.md` de `<task>/.crew/`; código das worktrees e links simbólicos (como o `.env`) não são servidos. A sessão principal é a única que grava o estado, sempre pelo `crew-state`; os subagents nunca escrevem nele. Os comandos e o formato estão no skill [`crew:state`](plugins/crew/skills/state/SKILL.md).
 
 Se a sessão de uma task fechar no meio, o estado continua no disco: rode o mesmo comando de novo com o mesmo ticket e ele oferece continuar da etapa em que parou.
 

@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Sobe o dashboard do crew num container nginx, só leitura, em 127.0.0.1.
 #
-#   bin/dashboard [workspace] [--port N] [--worktrees DIR]
+#   bin/dashboard [workspace] [--port N] [--worktrees DIR] [--lan]
 #   bin/dashboard --stop
+#
+# Por padrão só responde em 127.0.0.1. --lan publica em todas as interfaces, para
+# abrir de outro aparelho da rede (planos, reviews e histórico ficam visíveis a ela).
 #
 # Lê CREW_WORKTREES de <workspace>/.claude/settings.json (padrão: diretório atual).
 set -euo pipefail
@@ -13,6 +16,7 @@ IMAGE="nginx:alpine"
 port=7420
 workspace="."
 worktrees=""
+bind="127.0.0.1"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -21,7 +25,8 @@ while [ $# -gt 0 ]; do
       exit 0 ;;
     --port) port="${2:?--port precisa de um número}"; shift 2 ;;
     --worktrees) worktrees="${2:?--worktrees precisa de um diretório}"; shift 2 ;;
-    -h|--help) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --lan) bind="0.0.0.0"; shift ;;
+    -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) die "opção desconhecida: $1" ;;
     *) workspace="$1"; shift ;;
   esac
@@ -47,11 +52,18 @@ docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 docker run -d --rm --name "$CONTAINER" \
   --user "$(id -u):$(id -g)" \
   --tmpfs "/var/cache/nginx:uid=$(id -u),gid=$(id -g)" --tmpfs "/run:uid=$(id -u),gid=$(id -g)" \
-  -p "127.0.0.1:$port:8080" \
+  -p "$bind:$port:8080" \
   -v "$worktrees:/srv/tasks:ro" \
   -v "$CREW_DIR/dashboard:/srv/app:ro" \
   -v "$CREW_DIR/dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
   "$IMAGE" >/dev/null
 
 ok "dashboard em http://localhost:$port (tasks de $worktrees)"
+if [ "$bind" = "0.0.0.0" ]; then
+  for ip in $(hostname -I 2>/dev/null || ipconfig getifaddr en0 2>/dev/null || true); do
+    case "$ip" in *:*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) continue ;; esac
+    ok "na rede: http://$ip:$port"
+  done
+  info "aberto para a rede local: qualquer aparelho nela vê os planos, reviews e histórico das tasks"
+fi
 info "para parar: $0 --stop"
